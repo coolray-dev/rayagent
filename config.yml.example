@@ -1,0 +1,10 @@
+raydash:
+  nodeID:  # Must Have
+  url: # Must Have
+  token: # Must Have
+  interval:
+v2ray:
+  grpcaddr: # Must Have
+  inbound: 
+log:
+  level: 
