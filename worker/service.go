@@ -25,9 +25,7 @@ import (
 	"v2ray.com/core/transport/internet/websocket"
 )
 
-// ServicePoller poll raydash /services?nid= by a specified interval
-// then send all service into channel as a slice
-type ServicePoller struct {
+type servicePoller struct {
 	RayDashURL     string // e.g. https://raydash.example.com
 	Interval       uint64 // interval in second
 	Ticker         *time.Ticker
@@ -37,8 +35,8 @@ type ServicePoller struct {
 }
 
 // NewServicePoller return a new ServicePoller with private sub set
-func NewServicePoller(url string, interval uint64, schan chan<- []models.Service) ServicePoller {
-	return ServicePoller{
+func NewServicePoller(url string, interval uint64, schan chan<- []models.Service) *servicePoller {
+	return &servicePoller{
 		RayDashURL:     url,
 		Interval:       interval,
 		ServiceChannel: schan,
@@ -47,7 +45,7 @@ func NewServicePoller(url string, interval uint64, schan chan<- []models.Service
 }
 
 // Start start a instance
-func (c *ServicePoller) Start() {
+func (c *servicePoller) Start() {
 	c.WaitGroup.Add(1)
 	c.startTicker(c.getServices)
 	utils.Log.Info("ServicePoller Started")
@@ -55,7 +53,7 @@ func (c *ServicePoller) Start() {
 }
 
 // Stop stop a instance
-func (c *ServicePoller) Stop() {
+func (c *servicePoller) Stop() {
 	c.stopTicker()
 	close(c.ServiceChannel)
 	c.WaitGroup.Done()
@@ -63,13 +61,13 @@ func (c *ServicePoller) Stop() {
 }
 
 // GetNodeInfo is a general func retrieve node info from /nodes/:id
-func (c *ServicePoller) GetNodeInfo(nodeID uint64) (*models.Node, error) {
+func (c *servicePoller) GetNodeInfo(nodeID uint64) (*models.Node, error) {
 
 	// Generate Request
 	endpoint := c.RayDashURL + "/nodes/" + strconv.Itoa(int(nodeID))
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+nodeToken)
+	req.Header.Set("Authorization", "Bearer "+"node."+nodeInfo.Token)
 
 	// Call API
 	response, err := c.httpClient.Do(req)
@@ -96,12 +94,24 @@ func (c *ServicePoller) GetNodeInfo(nodeID uint64) (*models.Node, error) {
 }
 
 // getServices call raydash api
-func (c *ServicePoller) getServices() {
-	response, err := http.Get(c.RayDashURL + "/services")
+func (c *servicePoller) getServices() {
+
+	// Generate Request
+	endpoint := c.RayDashURL + "/nodes/" + fmt.Sprint(nodeInfo.ID) + "/services"
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+"node."+nodeInfo.Token)
+
+	// Call API
+	response, err := c.httpClient.Do(req)
 	if err != nil {
 		utils.Log.WithFields(logrus.Fields{
 			"error": err.Error(),
 		}).Error("Error Calling RayDash API")
+		return
+	}
+	if response.StatusCode != http.StatusOK {
+		utils.Log.WithField("StatusCode", response.StatusCode).Error("Error Calling RayDash API")
 		return
 	}
 	utils.Log.Debug("Successfully Called RayDash API:" + c.RayDashURL + "/services")
@@ -121,7 +131,7 @@ func (c *ServicePoller) getServices() {
 	return
 }
 
-func (c *ServicePoller) startTicker(worker func()) {
+func (c *servicePoller) startTicker(worker func()) {
 	ticker := time.NewTicker(time.Second * time.Duration(c.Interval))
 	go func() {
 		for range ticker.C {
@@ -132,7 +142,7 @@ func (c *ServicePoller) startTicker(worker func()) {
 	return
 }
 
-func (c *ServicePoller) stopTicker() {
+func (c *servicePoller) stopTicker() {
 	c.Ticker.Stop()
 	return
 }

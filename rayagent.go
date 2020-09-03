@@ -32,8 +32,9 @@ func main() {
 	// Create a waitgroup
 	var wg sync.WaitGroup
 
-	// Set nodeToken
+	// Set worker nodeInfo
 	worker.SetToken(modules.Config.GetString("raydash.token"))
+	worker.SetID(modules.Config.GetUint64("raydash.nodeID"))
 
 	// Create services receiver
 	servicePoller := worker.NewServicePoller(modules.Config.GetString("raydash.url"), modules.Config.GetUint64("raydash.interval"), schan)

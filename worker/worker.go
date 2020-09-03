@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,10 +19,18 @@ var userPool map[string]*models.User
 
 var userPoolLock sync.RWMutex
 
-var nodeToken string
+type typeNodeInfo struct {
+	Token string
+	ID    uint64
+}
+
+var nodeInfo typeNodeInfo
 
 func SetToken(t string) {
-	nodeToken = t
+	nodeInfo.Token = t
+}
+func SetID(id uint64) {
+	nodeInfo.ID = id
 }
 
 func init() {
@@ -37,19 +46,29 @@ func initUserPool() {
 	var err error
 	var response *http.Response
 	for retries > 0 {
-		response, err = http.Get(modules.Config.GetString("raydash.url") + "/users")
+		// Generate Request
+		endpoint := modules.Config.GetString("raydash.url") + "/nodes/" + strconv.Itoa(int(modules.Config.GetUint64("raydash.nodeID"))) + "/users"
+		var req *http.Request
+		req, err = http.NewRequest(http.MethodGet, endpoint, nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+"node."+modules.Config.GetString("raydash.token"))
+
+		// Call API
+		client := http.DefaultClient
+		response, err = client.Do(req)
 		if err != nil {
 			retries--
-			utils.Log.WithFields(logrus.Fields{
-				"error": err.Error(),
-			}).Error("Error Calling RayDash API")
+			utils.Log.WithError(err).Error("Error Calling RayDash API")
+		} else if response.StatusCode != http.StatusOK {
+			retries--
+			utils.Log.WithField("StatusCode", response.StatusCode).Error("Error Calling RayDash API")
 		} else {
 			break
 		}
 	}
 
 	// Exit rayagent if still cannot retrieve users
-	if err != nil {
+	if err != nil || response.StatusCode != http.StatusOK {
 		utils.Log.Fatal("Error Calling RayDash API")
 	}
 
