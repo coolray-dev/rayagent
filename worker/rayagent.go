@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// RayAgent instance
 type RayAgent struct {
 	nodeID         uint64
 	nodeInfo       *models.Node
@@ -27,6 +28,7 @@ type RayAgent struct {
 	gRPCConn       *grpc.ClientConn
 }
 
+// NewRayAgent return a rayagent
 func NewRayAgent(wg *sync.WaitGroup) *RayAgent {
 	return &RayAgent{
 		waitGroup:    wg,
@@ -35,7 +37,13 @@ func NewRayAgent(wg *sync.WaitGroup) *RayAgent {
 	}
 }
 
+// Start start a rayagent
 func (r *RayAgent) Start() {
+
+	// Set worker nodeInfo
+	nodeInfo.Token = modules.Config.GetString("raydash.token")
+	nodeInfo.ID = modules.Config.GetUint64("raydash.nodeID")
+	initUserPool()
 	r.startServicePoller()
 
 	r.startV2RayConnection()
@@ -52,6 +60,7 @@ func (r *RayAgent) Start() {
 	return
 }
 
+// Stop stop a rayagent
 func (r *RayAgent) Stop() {
 	fmt.Print("Stopping ServicePoller...")
 	r.servicePoller.Stop()

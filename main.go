@@ -25,10 +25,6 @@ func main() {
 	// Create a waitgroup
 	var wg sync.WaitGroup
 
-	// Set worker nodeInfo
-	worker.SetToken(modules.Config.GetString("raydash.token"))
-	worker.SetID(modules.Config.GetUint64("raydash.nodeID"))
-
 	// Setup RayAgent
 	rayagent := worker.NewRayAgent(&wg)
 	rayagent.Start()
