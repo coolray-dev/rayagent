@@ -9,8 +9,8 @@ type Service struct {
 
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	UserID      uint64
-	NodeID      uint64
+	UserID      uint64 `json:"uid"`
+	NodeID      uint64 `json:"nid"`
 
 	Host      string `json:"host"`
 	Port      uint   `json:"port"`

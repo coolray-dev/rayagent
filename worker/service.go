@@ -115,7 +115,7 @@ func (c *ServicePoller) getServices() {
 		utils.Log.WithField("StatusCode", response.StatusCode).Error("Error Calling RayDash API")
 		return
 	}
-	utils.Log.Debug("Successfully Called RayDash API:" + c.RayDashURL + "/services")
+	utils.Log.Debug("Successfully Called RayDash API:" + endpoint)
 	body, _ := ioutil.ReadAll(response.Body)
 	type services struct {
 		Services []models.Service `json:"services"`
