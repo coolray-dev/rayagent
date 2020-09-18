@@ -25,7 +25,8 @@ import (
 	"v2ray.com/core/transport/internet/websocket"
 )
 
-type servicePoller struct {
+// ServicePoller get services from raydash
+type ServicePoller struct {
 	RayDashURL     string // e.g. https://raydash.example.com
 	Interval       uint64 // interval in second
 	Ticker         *time.Ticker
@@ -35,8 +36,8 @@ type servicePoller struct {
 }
 
 // NewServicePoller return a new ServicePoller with private sub set
-func NewServicePoller(url string, interval uint64, schan chan<- []models.Service) *servicePoller {
-	return &servicePoller{
+func NewServicePoller(url string, interval uint64, schan chan<- []models.Service) *ServicePoller {
+	return &ServicePoller{
 		RayDashURL:     url,
 		Interval:       interval,
 		ServiceChannel: schan,
@@ -45,7 +46,7 @@ func NewServicePoller(url string, interval uint64, schan chan<- []models.Service
 }
 
 // Start start a instance
-func (c *servicePoller) Start() {
+func (c *ServicePoller) Start() {
 	c.WaitGroup.Add(1)
 	c.startTicker(c.getServices)
 	utils.Log.Info("ServicePoller Started")
@@ -53,7 +54,7 @@ func (c *servicePoller) Start() {
 }
 
 // Stop stop a instance
-func (c *servicePoller) Stop() {
+func (c *ServicePoller) Stop() {
 	c.stopTicker()
 	close(c.ServiceChannel)
 	c.WaitGroup.Done()
@@ -61,7 +62,7 @@ func (c *servicePoller) Stop() {
 }
 
 // GetNodeInfo is a general func retrieve node info from /nodes/:id
-func (c *servicePoller) GetNodeInfo(nodeID uint64) (*models.Node, error) {
+func (c *ServicePoller) GetNodeInfo(nodeID uint64) (*models.Node, error) {
 
 	// Generate Request
 	endpoint := c.RayDashURL + "/nodes/" + strconv.Itoa(int(nodeID))
@@ -94,7 +95,7 @@ func (c *servicePoller) GetNodeInfo(nodeID uint64) (*models.Node, error) {
 }
 
 // getServices call raydash api
-func (c *servicePoller) getServices() {
+func (c *ServicePoller) getServices() {
 
 	// Generate Request
 	endpoint := c.RayDashURL + "/nodes/" + fmt.Sprint(nodeInfo.ID) + "/services"
@@ -114,7 +115,7 @@ func (c *servicePoller) getServices() {
 		utils.Log.WithField("StatusCode", response.StatusCode).Error("Error Calling RayDash API")
 		return
 	}
-	utils.Log.Debug("Successfully Called RayDash API:" + c.RayDashURL + "/services")
+	utils.Log.Debug("Successfully Called RayDash API:" + endpoint)
 	body, _ := ioutil.ReadAll(response.Body)
 	type services struct {
 		Services []models.Service `json:"services"`
@@ -131,7 +132,7 @@ func (c *servicePoller) getServices() {
 	return
 }
 
-func (c *servicePoller) startTicker(worker func()) {
+func (c *ServicePoller) startTicker(worker func()) {
 	ticker := time.NewTicker(time.Second * time.Duration(c.Interval))
 	go func() {
 		for range ticker.C {
@@ -142,7 +143,7 @@ func (c *servicePoller) startTicker(worker func()) {
 	return
 }
 
-func (c *servicePoller) stopTicker() {
+func (c *ServicePoller) stopTicker() {
 	c.Ticker.Stop()
 	return
 }

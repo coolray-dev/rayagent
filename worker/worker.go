@@ -26,26 +26,19 @@ type typeNodeInfo struct {
 
 var nodeInfo typeNodeInfo
 
-func SetToken(t string) {
-	nodeInfo.Token = t
-}
-func SetID(id uint64) {
-	nodeInfo.ID = id
-}
-
 func init() {
-	initUserPool()
+	// Initialize userPool
+	userPool = make(map[string]*models.User)
 }
 
 func initUserPool() {
-	// Initialize userPool
-	userPool = make(map[string]*models.User)
 
-	// Set retry times to 3 before panic
+	// Set retry times to 3 before exit program
 	retries := 3
 	var err error
 	var response *http.Response
 	for retries > 0 {
+
 		// Generate Request
 		endpoint := modules.Config.GetString("raydash.url") + "/nodes/" + strconv.Itoa(int(modules.Config.GetUint64("raydash.nodeID"))) + "/users"
 		var req *http.Request
@@ -87,6 +80,13 @@ func initUserPool() {
 
 	// Fill userPool
 	for _, u := range r.Users {
+
+		// Validate user before adding
+		if err := modules.Validator.Struct(&u); err != nil {
+			utils.Log.WithField("username", u.Username).WithError(err).Warn("User Validation Failed")
+			continue
+		}
+
 		userPool[u.Email] = &u
 	}
 	return
