@@ -117,6 +117,8 @@ func (c *ServicePoller) getServices() {
 	}
 	utils.Log.Debug("Successfully Called RayDash API:" + endpoint)
 	body, _ := ioutil.ReadAll(response.Body)
+
+	// Unmarshal service from response
 	type services struct {
 		Services []models.Service `json:"services"`
 		Total    uint64           `json:"total"`
@@ -124,10 +126,17 @@ func (c *ServicePoller) getServices() {
 	var s services
 	err = json.Unmarshal(body, &s)
 	if err != nil {
-		utils.Log.WithFields(logrus.Fields{
-			"error": err.Error(),
-		}).Error("Error Parsing RayDash API Response")
+		utils.Log.WithError(err).Error("Error Parsing RayDash API Response")
 	}
+
+	// Validate services before sending it into channel
+	for _, i := range s.Services {
+		if err := modules.Validator.Struct(&i); err != nil {
+			utils.Log.WithError(err).Warn("Service Validation Failed")
+			return
+		}
+	}
+
 	c.ServiceChannel <- s.Services
 	return
 }
@@ -214,7 +223,7 @@ func (h *ServiceHandler) syncServicesMultiInbound() {
 		}
 		for i, s := range ServicesToDel {
 			j := findServiceIndex(&ServicesToDel[i], h.Services)
-			_ = h.handlerServiceClient.RemoveInbound(string(s.ID))
+			_ = h.handlerServiceClient.RemoveInbound(fmt.Sprintf("%x", s.ID))
 			h.Services = append(h.Services[:j], h.Services[j+1:]...)
 		}
 	}
