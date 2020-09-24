@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"github.com/coolray-dev/rayagent/models"
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
@@ -13,10 +15,11 @@ import (
 	"v2ray.com/core/transport/internet/websocket"
 )
 
+// ConvertVmessInbound return a config generated from service object
 func ConvertVmessInbound(s *models.Service) *core.InboundHandlerConfig {
 	port, _ := net.PortFromInt(uint32(s.Port))
 	return &core.InboundHandlerConfig{
-		Tag: string(s.ID),
+		Tag: fmt.Sprintf("%x", s.ID),
 		ReceiverSettings: serial.ToTypedMessage(
 			&proxyman.ReceiverConfig{
 				PortRange: net.SinglePortRange(port),
@@ -59,6 +62,7 @@ func ConvertVmessInbound(s *models.Service) *core.InboundHandlerConfig {
 	}
 }
 
+// ConvertService generate a vmess user object from a service object
 func ConvertService(s *models.Service) *protocol.User {
 	return &protocol.User{
 		Level: 0,

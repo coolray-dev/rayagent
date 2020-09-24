@@ -289,18 +289,14 @@ func (h *ServiceHandler) initializeSingleInbound() error {
 		return err
 	}
 
-	// ReAdd inbound
+	// Re-Add inbound with the same tag
 	inboundHandlerConfig, err := h.genVmessInbound()
 	if err != nil {
-		utils.Log.WithFields(logrus.Fields{
-			"error": err.Error(),
-		}).Error("Error Generating VmessInbound")
+		utils.Log.WithError(err).Error("Error Generating VmessInbound")
 		return err
 	}
 	if err = h.handlerServiceClient.AddInbound(inboundHandlerConfig); err != nil {
-		utils.Log.WithFields(logrus.Fields{
-			"error": err.Error(),
-		}).Error("Error Adding Inbound")
+		utils.Log.WithError(err).Error("Error Adding Inbound")
 		return errors.New("Error Adding Inbound")
 	}
 	return nil
@@ -319,6 +315,7 @@ func (h *ServiceHandler) genVmessInbound() (*core.InboundHandlerConfig, error) {
 	}
 
 	// Validate protocol
+	// Must validate because h.protocolConfig does not check
 	if !isProtocolValid(h.NodeInfo.VmessSetting.StreamSettings.TransportProtocol) {
 		utils.Log.WithFields(logrus.Fields{
 			"protocol": h.NodeInfo.TransportProtocol,
@@ -335,14 +332,10 @@ func (h *ServiceHandler) genVmessInbound() (*core.InboundHandlerConfig, error) {
 					Type: proxyman.AllocationStrategy_Always,
 				}, // Must have
 				StreamSettings: &internet.StreamConfig{
-					//Protocol:     internet.TransportProtocol(internet.TransportProtocol_value[h.NodeInfo.VmessSetting.StreamSettings.TransportProtocol]), // Deprecated
 					ProtocolName: h.NodeInfo.VmessSetting.StreamSettings.TransportProtocol,
 					TransportSettings: []*internet.TransportConfig{&internet.TransportConfig{
-						//Protocol:     internet.TransportProtocol(internet.TransportProtocol_value[h.NodeInfo.VmessSetting.StreamSettings.TransportProtocol]), // Deprecated
 						ProtocolName: h.NodeInfo.VmessSetting.StreamSettings.TransportProtocol,
-						Settings: serial.ToTypedMessage(&websocket.Config{
-							Path: "", // leave for future
-						}),
+						Settings:     h.protocolConfig(),
 					}},
 				},
 				ReceiveOriginalDestination: true,
@@ -368,6 +361,20 @@ func (h *ServiceHandler) genVmessInbound() (*core.InboundHandlerConfig, error) {
 	return config, nil
 }
 
+// Return a compatible format of protocol config
+func (h *ServiceHandler) protocolConfig() *serial.TypedMessage {
+	switch h.NodeInfo.VmessSetting.StreamSettings.TransportProtocol {
+	case "websocket":
+		return serial.ToTypedMessage(&websocket.Config{
+			Path: "",
+		})
+	default:
+		return nil
+
+	}
+}
+
+// Check if protocol name is compatible with vmess
 func isProtocolValid(p string) bool {
 	var validprotocol map[string]bool = map[string]bool{
 		"tcp":          true,
@@ -392,6 +399,7 @@ func findServiceIndex(s *models.Service, array []models.Service) int {
 
 // sub return element in A not in B
 // use hash map, so O(n)
+// use reflact, so not super efficient
 func sub(A interface{}, B interface{}) interface{} {
 
 	hash := make(map[interface{}]bool)
