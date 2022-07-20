@@ -15,19 +15,17 @@ require (
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
-	github.com/sirupsen/logrus v1.6.0
+	github.com/sirupsen/logrus v1.9.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/afero v1.4.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.6.1 // indirect
 	go.starlark.net v0.0.0-20200901195727-6e684ef5eeee // indirect
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
-	golang.org/x/sys v0.0.0-20200917073148-efd3b9a0ff20 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/genproto v0.0.0-20200917134801-bb4cff56e0d0 // indirect
 	google.golang.org/grpc v1.32.0
